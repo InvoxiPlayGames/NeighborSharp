@@ -24,6 +24,8 @@ namespace NeighborTool
             Console.WriteLine("  listdisks - Lists all mounted drives available to the console.");
             Console.WriteLine("  listdir <directory> - Lists all files and subfolders in a directory on the console.");
             Console.WriteLine("  launch <remote file> [remote directory] - Launches an XEX on the console, optionally with a launch directory.");
+            Console.WriteLine("  download <remote file> <local file> - Downloads a file from the console.");
+            Console.WriteLine("  upload <local file> <remote file> - Uploads a file to the console.");
         }
 
         static void Main(string[] args)
@@ -82,6 +84,21 @@ namespace NeighborTool
                         xbox.RunTitle(args[2], args[3]);
                     else
                         xbox.RunTitle(args[2]);
+                    break;
+                case "download":
+                    if (args.Length < 4)
+                    {
+                        PrintUsage(); return;
+                    }
+                    File.WriteAllBytes(args[3], xbox.DownloadFile(args[2]));
+                    break;
+                case "upload":
+                    if (args.Length < 4)
+                    {
+                        PrintUsage(); return;
+                    }
+                    byte[] filebytes = File.ReadAllBytes(args[2]);
+                    xbox.UploadFile(args[3], filebytes);
                     break;
             }
         }

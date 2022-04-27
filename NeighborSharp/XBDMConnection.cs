@@ -10,7 +10,7 @@ namespace NeighborSharp
     internal class XBDMConnection : IDisposable
     {
         private TcpClient Connection { get; }
-        private NetworkStream Stream { get; }
+        public NetworkStream Stream { get; }
 
         public XBDMConnection(Xbox360 xbox)
         {
@@ -97,9 +97,18 @@ namespace NeighborSharp
             return args.ToArray();
         }
 
-        /*public byte[] CommandBinary(string command)
+        public byte[] CommandBinary(string command)
         {
-
-        }*/
+            RunCommand(command);
+            XboxResponse response = new(ReadLine());
+            if (response.statusCode != 203)
+                throw new Exception($"Binary command returned {response.statusCode}: {response.message}");
+            byte[] lengthb = new byte[4];
+            Stream.Read(lengthb, 0, 4);
+            int length = BitConverter.ToInt32(lengthb);
+            byte[] readbytes = new byte[length];
+            Stream.Read(readbytes, 0, length);
+            return readbytes;
+        }
     }
 }

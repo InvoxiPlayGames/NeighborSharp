@@ -7,11 +7,11 @@ A very work-in-progress Xbox 360 XBDM client library written in C# for .NET 6.0.
 * Retrieving information on mounted drives
 * Browsing directories
 * Launching XEX files
+* Uploading files
+* Downloading files
 
 ## What Doesn't (TODO)
 
-* Uploading files
-* Downloading files
 * Listing loaded modules
 * Debugging features (console, debugger, memory viewer, etc)
 

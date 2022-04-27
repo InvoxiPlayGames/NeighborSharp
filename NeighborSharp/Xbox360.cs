@@ -100,5 +100,27 @@ namespace NeighborSharp
             XBDMConnection conn = new(this);
             conn.Command("magicboot");
         }
+
+        public byte[] DownloadFile(string filename)
+        {
+            XBDMConnection conn = new(this);
+            XboxArguments args = new();
+            args.stringValues["name"] = filename;
+            string command = "getfile " + args.ToString();
+            return conn.CommandBinary(command);
+        }
+
+        public void UploadFile(string filename, byte[] bytes)
+        {
+            XBDMConnection conn = new(this);
+            XboxArguments args = new();
+            args.stringValues["name"] = filename;
+            args.intValues["length"] = (uint)bytes.Length;
+            string command = "sendfile " + args.ToString();
+            XboxResponse response = conn.Command(command);
+            if (response.statusCode != 204)
+                throw new Exception("Did not get message to upload binary data.");
+            conn.Stream.Write(bytes);
+        }
     }
 }
