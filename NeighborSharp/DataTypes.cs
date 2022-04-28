@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
+﻿using System.Net;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace NeighborSharp
+namespace NeighborSharp.Types
 {
     public class XboxResponse
     {
@@ -47,18 +43,22 @@ namespace NeighborSharp
                 if ((c == ' ' && !inStringLiteral) || i == line.Length - 1)
                 {
                     if (parsedStringLiteral)
+                    {
+                        if (c != ' ' && c != '"') pendingValue += c;
                         stringValues.Add(pendingKey, pendingValue);
-                    else
+                    }
+                    else if (pendingKey != "")
                     {
                         if (!uint.TryParse(pendingValue, out uint parsedInt))
                         {
                             try
                             {
                                 parsedInt = Convert.ToUInt32(pendingValue, 16);
-                            } catch (FormatException) // edge case very shit
+                            }
+                            catch (FormatException) // edge case very shit
                             {
                                 pendingValue += c;
-                                stringValues.Add(pendingValue, "");
+                                stringValues.Add(pendingValue.Trim(), "");
                             }
                         }
                         intValues.Add(pendingKey, parsedInt);
@@ -74,9 +74,14 @@ namespace NeighborSharp
                 }
                 else if (c == '=' && !parsingValue)
                 {
-                    pendingKey = pendingValue;
+                    pendingKey = pendingValue.Trim();
                     pendingValue = "";
                     parsingValue = true;
+                    if (pendingKey == "string")
+                    {
+                        inStringLiteral = true;
+                        parsedStringLiteral = true;
+                    }
                 }
                 else
                 {
@@ -102,61 +107,66 @@ namespace NeighborSharp
 
     public class XboxDrive
     {
-        public long totalBytes;
-        public long usedBytes;
-        public long freeBytes;
-        public string driveLetter;
+        public long TotalBytes { get; }
+        public long UsedBytes { get; }
+        public long FreeBytes { get; }
+        public string DriveLetter { get; }
         public XboxDrive(string drive)
         {
-            driveLetter = drive;
+            DriveLetter = drive;
         }
         public XboxDrive(string drive, XboxArguments args)
         {
-            driveLetter = drive;
-            ParseArgs(args);
-        }
-        public void ParseArgs(XboxArguments args)
-        {
-            totalBytes = ((long)args.intValues["totalbyteshi"] << 32) | args.intValues["totalbyteslo"];
-            freeBytes = ((long)args.intValues["totalfreebyteshi"] << 32) | args.intValues["totalfreebyteslo"];
-            usedBytes = totalBytes - freeBytes;
+            DriveLetter = drive;
+            TotalBytes = ((long)args.intValues["totalbyteshi"] << 32) | args.intValues["totalbyteslo"];
+            FreeBytes = ((long)args.intValues["totalfreebyteshi"] << 32) | args.intValues["totalfreebyteslo"];
+            UsedBytes = TotalBytes - FreeBytes;
         }
         public override string ToString()
         {
-            return $"{driveLetter}:";
+            return $"{DriveLetter}:";
         }
     }
 
     public class XboxFileEntry
     {
-        public string fullPath;
-        public string fileName;
-        public bool isDirectory;
-        public long fileSize;
-        public DateTime createdTime;
-        public DateTime modifiedTime;
+        public string FullPath { get; }
+        public string FileName { get; }
+        public bool IsDirectory { get; }
+        public long FileSize { get; }
+        public DateTime CreatedTime { get; }
+        public DateTime ModifiedTime { get; }
         public XboxFileEntry(XboxArguments args, string directory)
         {
-            fileName = args.stringValues["name"];
-            fullPath = $"{directory}\\{fileName}";
-            fileSize = ((long)args.intValues["sizehi"] << 32) | args.intValues["sizelo"];
-            createdTime = DateTime.FromFileTimeUtc(((long)args.intValues["createhi"] << 32) | args.intValues["createlo"]);
-            modifiedTime = DateTime.FromFileTimeUtc(((long)args.intValues["changehi"] << 32) | args.intValues["changelo"]);
-            isDirectory = args.stringValues.ContainsKey("directory") || args.intValues.ContainsKey("directory");
+            FileName = args.stringValues["name"];
+            FullPath = $"{directory}\\{FileName}";
+            FileSize = ((long)args.intValues["sizehi"] << 32) | args.intValues["sizelo"];
+            CreatedTime = DateTime.FromFileTimeUtc(((long)args.intValues["createhi"] << 32) | args.intValues["createlo"]);
+            ModifiedTime = DateTime.FromFileTimeUtc(((long)args.intValues["changehi"] << 32) | args.intValues["changelo"]);
+            IsDirectory = args.stringValues.ContainsKey("directory") || args.intValues.ContainsKey("directory");
+        }
+
+        public override string ToString()
+        {
+            return FullPath;
         }
     }
 
     public class DiscoveredConsole
     {
-        public IPEndPoint endpoint;
-        public string name;
+        public IPEndPoint EndPoint { get; }
+        public string Name { get; }
         public DiscoveredConsole(IPEndPoint ep, byte[] datagram)
         {
             if (datagram[0] != 0x02)
                 throw new Exception("Recieved incorrect type NAP packet.");
             int nameLength = datagram[1];
-            endpoint = ep;
-            name = Encoding.ASCII.GetString(datagram, 2, nameLength);
+            EndPoint = ep;
+            Name = Encoding.ASCII.GetString(datagram, 2, nameLength);
+        }
+        public override string ToString()
+        {
+            return $"{EndPoint}: {Name}";
         }
     }
 }

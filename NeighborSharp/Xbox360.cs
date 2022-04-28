@@ -1,5 +1,5 @@
 ﻿using System.Net;
-using System.Net.Sockets;
+using NeighborSharp.Types;
 
 namespace NeighborSharp
 {
@@ -26,6 +26,11 @@ namespace NeighborSharp
             FetchConsoleInfo();
         }
 
+        public override string ToString()
+        {
+            return $"{DebugName} on {EndPoint.Address}";
+        }
+
         public string GetRunningProcess()
         {
             XBDMConnection conn = new(this);
@@ -42,19 +47,17 @@ namespace NeighborSharp
             foreach(XboxArguments arg in args)
             {
                 string letter = arg.stringValues["drivename"];
-                XboxDrive drive = new(letter);
                 XboxArguments commargs = new();
                 commargs.stringValues["name"] = $"{letter}:\\";
                 try
                 {
                     XboxArguments driveargs = conn.CommandMultilineArg("drivefreespace " + commargs.ToString());
-                    drive.ParseArgs(driveargs);
+                    drives.Add(new(letter, driveargs));
                 }
                 catch (Exception)
                 {
-                    // ignore :)
+                    drives.Add(new(letter));
                 }
-                drives.Add(drive);
             }
             return drives.ToArray();
         }

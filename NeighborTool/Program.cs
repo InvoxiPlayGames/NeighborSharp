@@ -1,6 +1,5 @@
-﻿using System;
-using System.Net;
-using NeighborSharp;
+﻿using NeighborSharp;
+using NeighborSharp.Types;
 
 namespace NeighborTool
 {
@@ -39,7 +38,7 @@ namespace NeighborTool
                 DiscoveredConsole[] consoles = Xbox360Discovery.DiscoverAllConsoles();
                 foreach(DiscoveredConsole console in consoles)
                 {
-                    Console.WriteLine($"{console.endpoint}: {console.name}");
+                    Console.WriteLine(console);
                 }
                 return;
             }
@@ -55,9 +54,9 @@ namespace NeighborTool
                     Console.WriteLine($"Drives mounted: {drives.Length}");
                     foreach (XboxDrive drive in drives)
                     {
-                        Console.WriteLine($"{drive.driveLetter}:");
-                        Console.WriteLine($"  Free: {BytesToString(drive.freeBytes, 2)}");
-                        Console.WriteLine($"  Total: {BytesToString(drive.totalBytes, 2)}");
+                        Console.WriteLine($"{drive.DriveLetter}:");
+                        Console.WriteLine($"  Free: {BytesToString(drive.FreeBytes, 2)}");
+                        Console.WriteLine($"  Total: {BytesToString(drive.TotalBytes, 2)}");
                     }
                     break;
                 case "listdir":
@@ -68,11 +67,11 @@ namespace NeighborTool
                     XboxFileEntry[] files = xbox.GetDirectoryList(args[2]);
                     foreach(XboxFileEntry file in files)
                     {
-                        Console.WriteLine($"{file.createdTime} - {file.fileName}");
-                        if (file.isDirectory)
+                        Console.WriteLine($"{file.CreatedTime} - {file.FileName}");
+                        if (file.IsDirectory)
                             Console.WriteLine($"  Directory");
                         else
-                            Console.WriteLine($"  Size: {BytesToString(file.fileSize, 2)}");
+                            Console.WriteLine($"  Size: {BytesToString(file.FileSize, 2)}");
                     }
                     break;
                 case "launch":
