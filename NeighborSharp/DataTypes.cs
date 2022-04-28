@@ -166,7 +166,7 @@ namespace NeighborSharp.Types
         }
         public override string ToString()
         {
-            return $"{EndPoint}: {Name}";
+            return $"{EndPoint.Address}{(Name.Length > 1 ? " - " + Name : "")}";
         }
     }
 }

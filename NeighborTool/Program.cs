@@ -16,7 +16,7 @@ namespace NeighborTool
 
         static void PrintUsage()
         {
-            Console.WriteLine("usage: NeighborTool <console IP> <command> [args...]");
+            Console.WriteLine("usage: NeighborTool <console IP | discover> <command> [args...]");
             Console.WriteLine();
             Console.WriteLine("available commands:");
             Console.WriteLine("  info - Lists the name and currently running title of the console.");
@@ -25,6 +25,10 @@ namespace NeighborTool
             Console.WriteLine("  launch <remote file> [remote directory] - Launches an XEX on the console, optionally with a launch directory.");
             Console.WriteLine("  download <remote file> <local file> - Downloads a file from the console.");
             Console.WriteLine("  upload <local file> <remote file> - Uploads a file to the console.");
+            Console.WriteLine();
+            Console.WriteLine("console discovery:");
+            Console.WriteLine("  discover all - Lists the IP addresses and names of all discovered consoles.");
+            Console.WriteLine("  discover <name> - Lists the IP address of the console matching that name, if one is discovered.");
         }
 
         static void Main(string[] args)
@@ -33,12 +37,20 @@ namespace NeighborTool
             {
                 PrintUsage(); return;
             }
-            if (args[0].ToLower() == "discover")
+            if (args.Length == 2 && args[0].ToLower() == "discover")
             {
-                DiscoveredConsole[] consoles = Xbox360Discovery.DiscoverAllConsoles();
-                foreach(DiscoveredConsole console in consoles)
+                if (args[1].ToLower() == "all")
                 {
-                    Console.WriteLine(console);
+                    DiscoveredConsole[] consoles = Xbox360Discovery.DiscoverAllConsoles();
+                    foreach (DiscoveredConsole console in consoles)
+                    {
+                        Console.WriteLine(console);
+                    }
+                } else
+                {
+                    DiscoveredConsole? console = Xbox360Discovery.DiscoverConsoleByName(args[1]);
+                    if (console != null)
+                        Console.WriteLine(console);
                 }
                 return;
             }

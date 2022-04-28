@@ -18,9 +18,12 @@ namespace NeighborSharp
             List<DiscoveredConsole> consoles = new();
             try
             {
-                IPEndPoint? console = null;
-                byte[] datagram = udp.Receive(ref console);
-                consoles.Add(new(console, datagram));
+                while (true)
+                {
+                    IPEndPoint? console = null;
+                    byte[] datagram = udp.Receive(ref console);
+                    consoles.Add(new(console, datagram));
+                }
             } catch (Exception)
             {
                 // ignore :)
@@ -33,18 +36,16 @@ namespace NeighborSharp
             type1.AddRange(Encoding.ASCII.GetBytes(consolename));
             udp.Client.ReceiveTimeout = 1000;
             udp.Send(type1.ToArray(), new IPEndPoint(IPAddress.Broadcast, 730));
-            List<DiscoveredConsole> consoles = new();
             try
             {
                 IPEndPoint? console = null;
                 byte[] datagram = udp.Receive(ref console);
-                consoles.Add(new(console, datagram));
+                return new(console, datagram);
             }
             catch (Exception)
             {
-                // ignore :)
+                return null;
             }
-            return consoles.Find((a) => a.Name == consolename);
         }
     }
 }
