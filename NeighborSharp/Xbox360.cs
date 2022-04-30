@@ -104,6 +104,12 @@ namespace NeighborSharp
             conn.Command("magicboot");
         }
 
+        public void Shutdown()
+        {
+            XBDMConnection conn = new(this);
+            conn.Command("shutdown");
+        }
+
         public byte[] DownloadFile(string filename)
         {
             XBDMConnection conn = new(this);

@@ -111,6 +111,9 @@ namespace NeighborTool
                     byte[] filebytes = File.ReadAllBytes(args[2]);
                     xbox.UploadFile(args[3], filebytes);
                     break;
+                case "shutdown":
+                    xbox.Shutdown();
+                    break;
             }
         }
     }
