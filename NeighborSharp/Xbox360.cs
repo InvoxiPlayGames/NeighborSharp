@@ -11,7 +11,7 @@ namespace NeighborSharp
         private void FetchConsoleInfo()
         {
             XBDMConnection conn = new(this);
-            DebugName = conn.Command("DBGNAME").message;
+            DebugName = conn.Command("dbgname").message;
         }
 
         public Xbox360(string ip)

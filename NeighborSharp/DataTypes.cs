@@ -25,6 +25,8 @@ namespace NeighborSharp.Types
     {
         public Dictionary<string, string> stringValues = new();
         public Dictionary<string, uint> intValues = new();
+        public Dictionary<string, ulong> longValues = new();
+        public List<string> commands = new();
 
         public XboxArguments() { }
 
@@ -34,58 +36,95 @@ namespace NeighborSharp.Types
         {
             string pendingKey = "";
             string pendingValue = "";
+            bool parsingKey = true;
             bool parsingValue = false;
             bool inStringLiteral = false;
-            bool parsedStringLiteral = false;
             for (int i = 0; i < line.Length; i++)
             {
                 char c = line[i];
-                if ((c == ' ' && !inStringLiteral) || i == line.Length - 1)
+                if (parsingKey)
                 {
-                    if (parsedStringLiteral)
+                    if ((c == ' ' && pendingKey != "") || i == line.Length - 1)
                     {
-                        if (c != ' ' && c != '"') pendingValue += c;
-                        stringValues.Add(pendingKey, pendingValue);
-                    }
-                    else if (pendingKey != "")
+                        // if we're at the end of a key definition and there's 
+                        // a space, this is a command
+                        // if we're at the end, just add on the current character anyway
+                        if (i == line.Length - 1) pendingKey += c;
+                        commands.Add(pendingKey);
+                        pendingKey = "";
+                    } else if (c == '=' && pendingKey != "")
                     {
-                        if (!uint.TryParse(pendingValue, out uint parsedInt))
+                        // if we're at the end of a key definition and there's
+                        // an assignment value, start parsing a value
+                        parsingKey = false;
+                        if (pendingKey == "string") // the "string" value in debug logs is weird
+                        { // so we go ahead and treat the rest as a string literal value
+                            pendingValue = line.Substring(i + 1);
+                            stringValues.Add(pendingKey, pendingValue);
+                            i = line.Length;
+                        } else
                         {
-                            try
+                            // start parsing the value after the =
+                            parsingValue = true;
+                        }
+                    } else
+                    {
+                        // add the character to the pending key value
+                        pendingKey += c;
+                    }
+                } else if (parsingValue)
+                {
+                    if ((c == ' ' && !inStringLiteral) || i == line.Length - 1)
+                    {
+                        // if we see a space and we *aren't* in the middle of a
+                        // string literal, we're finished here, try to determine the type
+                        uint tempuint = 0;
+                        ulong tempulong = 0;
+                        // if we're at the end, just add on the current character anyway
+                        if (i == line.Length - 1 && c != '"') pendingValue += c;
+                        if (pendingValue.StartsWith("0x") &&
+                            !pendingValue.Contains(",")) // hexadecimal uint and not a vector type
+                        {
+                            tempuint = Convert.ToUInt32(pendingValue.Substring(2), 16);
+                            intValues.Add(pendingKey, tempuint);
+                        } else if (pendingValue.StartsWith("0q")) // hexadecimal ulong
+                        {
+                            tempulong = Convert.ToUInt64(pendingValue.Substring(2), 16);
+                            longValues.Add(pendingKey, tempulong);
+                        } else // neither of these thigns, try to parse as an integer. if not, we string!
+                        {
+                            if (ulong.TryParse(pendingValue, out tempulong))
                             {
-                                parsedInt = Convert.ToUInt32(pendingValue, 16);
-                            }
-                            catch (FormatException) // edge case very shit
+                                if (tempulong <= uint.MaxValue) // if it can be an int, make it so.
+                                {
+                                    tempuint = (uint)tempulong;
+                                    intValues.Add(pendingKey, tempuint);
+                                } else
+                                {
+                                    longValues.Add(pendingKey, tempulong);
+                                }
+                            } else
                             {
-                                pendingValue += c;
-                                stringValues.Add(pendingValue.Trim(), "");
+                                stringValues.Add(pendingKey, pendingValue);
                             }
                         }
-                        intValues.Add(pendingKey, parsedInt);
-                    }
-                    parsingValue = false;
-                    pendingKey = "";
-                    pendingValue = "";
-                    parsedStringLiteral = false;
-                } else if (c == '"')
-                {
-                    if (parsingValue) inStringLiteral = !inStringLiteral;
-                    parsedStringLiteral = true;
-                }
-                else if (c == '=' && !parsingValue)
-                {
-                    pendingKey = pendingValue.Trim();
-                    pendingValue = "";
-                    parsingValue = true;
-                    if (pendingKey == "string")
+                        pendingKey = "";
+                        pendingValue = "";
+                        parsingValue = false;
+                        parsingKey = true;
+                    } else if (c == '"')
                     {
-                        inStringLiteral = true;
-                        parsedStringLiteral = true;
+                        // if we're in a string literal and we see a quote, check if
+                        // it's escaped. if it isn't, then end the string literal.
+                        // if we aren't in a string literal, we are now!
+                        if (!inStringLiteral || (inStringLiteral && line[i-1] != '\\'))
+                        {
+                            inStringLiteral = !inStringLiteral;
+                        } 
+                    } else
+                    {
+                        pendingValue += c;
                     }
-                }
-                else
-                {
-                    pendingValue += c;
                 }
             }
         }
@@ -93,6 +132,10 @@ namespace NeighborSharp.Types
         public override string ToString()
         {
             string ret = "";
+            foreach (string command in commands)
+            {
+                ret += $"{command} ";
+            }
             foreach (string key in stringValues.Keys)
             {
                 ret += $"{key}=\"{stringValues[key]}\" ";
@@ -100,6 +143,10 @@ namespace NeighborSharp.Types
             foreach (string key in intValues.Keys)
             {
                 ret += $"{key}=0x{intValues[key]:X8} ";
+            }
+            foreach (string key in longValues.Keys)
+            {
+                ret += $"{key}=0q{longValues[key]:X8} ";
             }
             return ret;
         }

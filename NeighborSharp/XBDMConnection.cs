@@ -4,7 +4,7 @@ using NeighborSharp.Types;
 
 namespace NeighborSharp
 {
-    internal class XBDMConnection : IDisposable
+    public class XBDMConnection : IDisposable
     {
         private TcpClient Connection { get; }
         public NetworkStream Stream { get; }
@@ -12,15 +12,19 @@ namespace NeighborSharp
         public XBDMConnection(Xbox360 xbox)
         {
             Connection = new();
+            Connection.ReceiveTimeout = 1000;
+            Connection.SendTimeout = 1000;
+            if (!Connection.ConnectAsync(xbox.EndPoint).Wait(1000))
+            {
+                throw new Exception($"Failed to connect to {xbox.EndPoint}");
+            }
             try
             {
-                Connection.Connect(xbox.EndPoint);
-                Connection.ReceiveTimeout = 2000;
                 Stream = Connection.GetStream();
-                while (Stream.ReadByte() != '\n');
+                while (Stream.ReadByte() != '\n'); // read out the welcome message
             } catch (Exception)
             {
-                throw new Exception($"Failed to intialise connection to {xbox.DebugName} ({xbox.EndPoint})");
+                throw new Exception($"Failed to intialise connection to {xbox.EndPoint}");
             }
         }
 
@@ -36,7 +40,12 @@ namespace NeighborSharp
             }
         }
 
-        private string ReadLine()
+        public bool BytesAvailable()
+        {
+            return Connection.Available > 0;
+        }
+
+        public string ReadLine()
         {
             int readbyte;
             string read = "";
@@ -54,6 +63,11 @@ namespace NeighborSharp
         {
             command += "\r\n";
             Stream.Write(Encoding.ASCII.GetBytes(command));
+        }
+
+        public void CommandNoResponse(string command)
+        {
+            RunCommand(command);
         }
 
         public XboxResponse Command(string command)
@@ -85,6 +99,7 @@ namespace NeighborSharp
                 args.AddArguments(line);
             return args;
         }
+
         public XboxArguments[] CommandMultiline(string command)
         {
             string[] lines = CommandMultilineStrings(command);
@@ -106,6 +121,31 @@ namespace NeighborSharp
             byte[] readbytes = new byte[length];
             Stream.Read(readbytes, 0, length);
             return readbytes;
+        }
+
+        public XboxResponse Command(XboxArguments command)
+        {
+            return Command(command.ToString());
+        }
+
+        public XboxArguments[] CommandMultiline(XboxArguments command)
+        {
+            return CommandMultiline(command.ToString());
+        }
+
+        public XboxArguments CommandMultilineArg(XboxArguments command)
+        {
+            return CommandMultilineArg(command.ToString());
+        }
+
+        public string[] CommandMultilineStrings(XboxArguments command)
+        {
+            return CommandMultilineStrings(command.ToString());
+        }
+
+        public byte[] CommandBinary(XboxArguments command)
+        {
+            return CommandBinary(command.ToString());
         }
     }
 }
