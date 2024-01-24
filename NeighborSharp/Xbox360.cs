@@ -1,10 +1,13 @@
 ﻿using System.Net;
+using System.Runtime.InteropServices;
 using NeighborSharp.Types;
 
 namespace NeighborSharp
 {
     public class Xbox360
     {
+        private const int _maxReadableBytes = 64;
+
         public IPEndPoint EndPoint { get; }
         public string? DebugName { get; private set; }
 
@@ -38,6 +41,51 @@ namespace NeighborSharp
             return args.stringValues["name"];
         }
 
+        public byte[] ReadBytes(uint addr, int len = _maxReadableBytes)
+        {
+            XBDMConnection conn = new(this);
+
+            var result = new List<byte>();
+            var chunks = (int)Math.Ceiling((double)len / _maxReadableBytes);
+
+            // XBDM only returns 64 bytes maximum, so we'll continue iterating in 64-byte chunks.
+            for (int i = 0; i < chunks; i++)
+            {
+                int chunkSize = Math.Min(_maxReadableBytes, len - result.Count);
+
+                var args = conn.CommandMultilineArg($"getmem addr={addr + i * _maxReadableBytes} length={chunkSize}");
+                result.AddRange(MemoryHelper.HexStringToByteArray(args.commands[0]));
+            }
+
+            return result.ToArray();
+        }
+
+        public T Read<T>(uint addr) where T : unmanaged
+        {
+            var data = ReadBytes(addr, Marshal.SizeOf(typeof(T)));
+
+            if (data.Length <= 0)
+                return default;
+
+            return MemoryHelper.ByteArrayToStructure<T>(data.Reverse().ToArray());
+        }
+
+        public XboxResponse WriteBytes(uint addr, byte[] data)
+        {
+            XBDMConnection conn = new(this);
+
+            var cmd = $"setmem addr={addr} data=";
+
+            foreach (var b in data)
+                cmd += b.ToString("X2");
+
+            return conn.Command(cmd);
+        }
+
+        public XboxResponse Write<T>(uint addr, T data) where T : unmanaged
+        {
+            return WriteBytes(addr, MemoryHelper.StructureToByteArray(data).Reverse().ToArray());
+        }
 
         public XboxDrive[] GetDriveList()
         {
