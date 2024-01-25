@@ -6,8 +6,6 @@ namespace NeighborSharp
 {
     public class Xbox360
     {
-        private const int _maxReadableBytes = 64;
-
         public IPEndPoint EndPoint { get; }
         public string? DebugName { get; private set; }
 
@@ -41,23 +39,11 @@ namespace NeighborSharp
             return args.stringValues["name"];
         }
 
-        public byte[] ReadBytes(uint addr, int len = _maxReadableBytes)
+        public byte[] ReadBytes(uint addr, int len)
         {
             XBDMConnection conn = new(this);
-
-            var result = new List<byte>();
-            var chunks = (int)Math.Ceiling((double)len / _maxReadableBytes);
-
-            // XBDM only returns 64 bytes maximum, so we'll continue iterating in 64-byte chunks.
-            for (int i = 0; i < chunks; i++)
-            {
-                int chunkSize = Math.Min(_maxReadableBytes, len - result.Count);
-
-                var args = conn.CommandMultilineArg($"getmem addr={addr + i * _maxReadableBytes} length={chunkSize}");
-                result.AddRange(MemoryHelper.HexStringToByteArray(args.commands[0]));
-            }
-
-            return result.ToArray();
+            XboxArguments args = conn.CommandMultilineArg($"getmem addr={addr} length={len}");
+            return MemoryHelper.HexStringToByteArray(string.Join(string.Empty, args.commands));
         }
 
         public T Read<T>(uint addr) where T : unmanaged
