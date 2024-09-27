@@ -44,7 +44,7 @@ namespace NeighborSharp
         }
 
 
-        public XboxDrive[] GetDriveList()
+        public virtual XboxDrive[] GetDriveList()
         {
             XBDMConnection conn = new(this);
             List<XboxDrive> drives = new();

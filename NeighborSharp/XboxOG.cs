@@ -26,7 +26,7 @@ namespace NeighborSharp
             return $"{DebugName} on {EndPoint.Address}";
         }
 
-        public new XboxDrive[] GetDriveList()
+        public override XboxDrive[] GetDriveList()
         {
             XBDMConnection conn = new(this);
             List<XboxDrive> drives = new();
