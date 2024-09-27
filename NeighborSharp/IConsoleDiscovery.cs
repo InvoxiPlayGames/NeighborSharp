@@ -57,16 +57,16 @@ namespace NeighborSharp
         public bool DiscoverConsole(IPEndPoint endPoint)
         {
             byte[] type3 = { 0x03, 0x00 };
-            udp.Client.ReceiveTimeout = 250;
+            udp.Client.ReceiveTimeout = 1000;
             udp.Send(type3, endPoint);
             try
             {
-                while (true)
+                IPEndPoint? console = null;
+                byte[] datagram = udp.Receive(ref console);
+                // IPEndPoint IsEqual doesn't work so fuck man idk
+                if (console.ToString() == endPoint.ToString())
                 {
-                    IPEndPoint? console = null;
-                    byte[] datagram = udp.Receive(ref console);
-                    if (console == endPoint)
-                        return true;
+                    return true;
                 }
             }
             catch (Exception)
