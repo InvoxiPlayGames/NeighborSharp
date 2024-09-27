@@ -9,7 +9,7 @@ namespace NeighborSharp
         private TcpClient Connection { get; }
         public NetworkStream Stream { get; }
 
-        public XBDMConnection(Xbox360 xbox)
+        public XBDMConnection(IXbox xbox)
         {
             Connection = new();
             Connection.ReceiveTimeout = 1000;

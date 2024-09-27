@@ -16,13 +16,15 @@ namespace NeighborTool
 
         static void PrintUsage()
         {
-            Console.WriteLine("usage: NeighborTool <console IP | discover> <command> [args...]");
+            Console.WriteLine("usage: NeighborTool [og:]<console IP | discover> <command> [args...]");
+            Console.WriteLine("  for OG Xbox, use the \"og:\" prefix before IP address");
+            Console.WriteLine("  if running a developer kernel, use the debug IP!");
             Console.WriteLine();
             Console.WriteLine("available commands:");
             Console.WriteLine("  info - Lists the name and currently running title of the console.");
             Console.WriteLine("  listdisks - Lists all mounted drives available to the console.");
             Console.WriteLine("  listdir <directory> - Lists all files and subfolders in a directory on the console.");
-            Console.WriteLine("  launch <remote file> [remote directory] - Launches an XEX on the console, optionally with a launch directory.");
+            Console.WriteLine("  launch <remote file> [remote directory] - Launches an XBE or XEX on the console, optionally with a launch directory.");
             Console.WriteLine("  download <remote file> <local file> - Downloads a file from the console.");
             Console.WriteLine("  upload <local file> <remote file> - Uploads a file to the console.");
             Console.WriteLine();
@@ -37,24 +39,40 @@ namespace NeighborTool
             {
                 PrintUsage(); return;
             }
+            bool isOg = false;
+            if (args[0].ToLower().StartsWith("og:"))
+            {
+                isOg = true;
+                args[0] = args[0].Substring(3);
+            }
             if (args.Length == 2 && args[0].ToLower() == "discover")
             {
+                IConsoleDiscovery discovery;
+                if (!isOg)
+                    discovery = new Xbox360Discovery();
+                else
+                    discovery = new XboxOGDiscovery();
+
                 if (args[1].ToLower() == "all")
                 {
-                    DiscoveredConsole[] consoles = Xbox360Discovery.DiscoverAllConsoles();
+                    DiscoveredConsole[] consoles = discovery.DiscoverAllConsoles();
                     foreach (DiscoveredConsole console in consoles)
                     {
                         Console.WriteLine(console);
                     }
                 } else
                 {
-                    DiscoveredConsole? console = Xbox360Discovery.DiscoverConsoleByName(args[1]);
+                    DiscoveredConsole? console = discovery.DiscoverConsoleByName(args[1]);
                     if (console != null)
                         Console.WriteLine(console);
                 }
                 return;
             }
-            Xbox360 xbox = new(args[0]);
+            IXbox xbox;
+            if (!isOg)
+                xbox = new Xbox360(args[0]);
+            else
+                xbox = new XboxOG(args[0]);
             switch (args[1])
             {
                 case "info":

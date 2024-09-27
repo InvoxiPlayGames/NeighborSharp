@@ -3,15 +3,20 @@ using NeighborSharp.Types;
 
 namespace NeighborSharp
 {
-    public class Xbox360
+    public class Xbox360 : IXbox
     {
         public IPEndPoint EndPoint { get; }
-        public string? DebugName { get; private set; }
+        public string? DebugName { get; internal set; }
 
         private void FetchConsoleInfo()
         {
             XBDMConnection conn = new(this);
             DebugName = conn.Command("dbgname").message;
+        }
+
+        internal Xbox360(IPEndPoint ep)
+        {
+            EndPoint = ep;
         }
 
         public Xbox360(string ip)
