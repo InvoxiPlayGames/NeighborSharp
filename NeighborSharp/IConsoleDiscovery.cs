@@ -53,5 +53,27 @@ namespace NeighborSharp
                 return null;
             }
         }
+
+        public bool DiscoverConsole(IPEndPoint endPoint)
+        {
+            byte[] type3 = { 0x03, 0x00 };
+            udp.Client.ReceiveTimeout = 250;
+            udp.Send(type3, endPoint);
+            try
+            {
+                while (true)
+                {
+                    IPEndPoint? console = null;
+                    byte[] datagram = udp.Receive(ref console);
+                    if (console == endPoint)
+                        return true;
+                }
+            }
+            catch (Exception)
+            {
+                // ignore :)
+            }
+            return false;
+        }
     }
 }
